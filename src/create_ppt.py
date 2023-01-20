@@ -2,10 +2,13 @@ from pptx import Presentation
 from pathlib import Path
 from my_argparse import get_args
 from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
 INPUT_FILENAME = "split_lyrics.txt"
 BLANK_SLIDE_NOTATION = "#"
+FONT = "ARIAL"
+TITLE_FONT_SIZE = 40
+LYRICS_FONT_SIZE = 27
 
 def data_folder_path():
     return Path(__file__).parent.parent.joinpath("data")
@@ -48,14 +51,16 @@ def create_lyric_slide(ppt, lyric_block):
 
 def create_textbox(ppt, slide, contents):
     txBox = slide.shapes.add_textbox(
-        Inches(3), Inches(3), ppt.slide_width, ppt.slide_height)
-
+        0, 0, ppt.slide_width, ppt.slide_height)
+    
     tf = txBox.text_frame
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
     p = tf.paragraphs[0]
     p.text = contents
     p.alignment = PP_ALIGN.CENTER
-    p.font.name = "ARIAL"
-    p.font.size = Pt(32)
+    p.font.name = FONT
+    p.font.size = Pt(LYRICS_FONT_SIZE)
 
 
 def create_ppt(title, authors, lyric_blocks):
