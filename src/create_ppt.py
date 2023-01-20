@@ -22,8 +22,8 @@ def output_file_path():
     return f"{data_folder_path()}/output"
 
 
-def layout(ppt):
-    return ppt.slide_layouts[0]
+def blank_layout(ppt):
+    return ppt.slide_layouts[6]
 
 
 def read_file_into_blocks(make_uppercase):
@@ -36,16 +36,16 @@ def read_file_into_blocks(make_uppercase):
 
 
 def create_title_slide(ppt, title, authors):
-    title_slide = ppt.slides.add_slide(layout(ppt))
+    title_slide = ppt.slides.add_slide(blank_layout(ppt))
     create_textbox(ppt, title_slide, f"{title}\n{authors}")
 
 
 def create_blank_slide(ppt):
-    ppt.slides.add_slide(layout(ppt))
+    ppt.slides.add_slide(blank_layout(ppt))
 
 
 def create_lyric_slide(ppt, lyric_block):
-    lyric_slide = ppt.slides.add_slide(layout(ppt))
+    lyric_slide = ppt.slides.add_slide(blank_layout(ppt))
     create_textbox(ppt, lyric_slide, lyric_block)
 
 
