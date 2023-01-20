@@ -3,12 +3,20 @@ from pathlib import Path
 from my_argparse import get_args
 from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.dml.color import RGBColor
 
 INPUT_FILENAME = "split_lyrics.txt"
+TEMPLATE_FILENAME = "Template.pptx"
 BLANK_SLIDE_NOTATION = "#"
 FONT = "ARIAL"
 TITLE_FONT_SIZE = 40
 LYRICS_FONT_SIZE = 27
+
+def get_template_blank_layout():
+    template_ppt = Presentation(input_file_path(TEMPLATE_FILENAME))
+    blank_layout = template_ppt.slide_layouts[0]
+    return blank_layout
+
 
 def data_folder_path():
     return Path(__file__).parent.parent.joinpath("data")
@@ -22,10 +30,6 @@ def output_file_path():
     return f"{data_folder_path()}/output"
 
 
-def blank_layout(ppt):
-    return ppt.slide_layouts[6]
-
-
 def read_file_into_blocks(make_uppercase):
     with open(input_file_path(INPUT_FILENAME), "r") as file:
         text = file.read()
@@ -35,17 +39,17 @@ def read_file_into_blocks(make_uppercase):
     raise Exception
 
 
-def create_title_slide(ppt, title, authors):
-    title_slide = ppt.slides.add_slide(blank_layout(ppt))
+def create_title_slide(ppt, blank_layout, title, authors):
+    title_slide = ppt.slides.add_slide(blank_layout)
     create_textbox(ppt, title_slide, f"{title}\n{authors}")
 
 
-def create_blank_slide(ppt):
-    ppt.slides.add_slide(blank_layout(ppt))
+def create_blank_slide(ppt, blank_layout):
+    ppt.slides.add_slide(blank_layout)
 
 
-def create_lyric_slide(ppt, lyric_block):
-    lyric_slide = ppt.slides.add_slide(blank_layout(ppt))
+def create_lyric_slide(ppt, blank_layout, lyric_block):
+    lyric_slide = ppt.slides.add_slide(blank_layout)
     create_textbox(ppt, lyric_slide, lyric_block)
 
 
@@ -59,18 +63,35 @@ def create_textbox(ppt, slide, contents):
     p = tf.paragraphs[0]
     p.text = contents
     p.alignment = PP_ALIGN.CENTER
-    p.font.name = FONT
-    p.font.size = Pt(LYRICS_FONT_SIZE)
+    font = p.font
+    font.name = FONT
+    font.size = Pt(LYRICS_FONT_SIZE)
+    font.color.rgb = RGBColor(255, 255, 255)
+    font.bold = True
+
+
+def create_blank_layout(ppt):
+    blank_layout = ppt.slide_layouts[6]
+    fill = blank_layout.background.fill
+    fill.solid()
+    fill.fore_color.rgb = RGBColor(0, 0, 0)
 
 
 def create_ppt(title, authors, lyric_blocks):
     ppt = Presentation()
-    create_title_slide(ppt, title, authors)
+    blank_layout = create_blank_layout(ppt)
+    
+    blank_layout = ppt.slide_layouts[6]
+    fill = blank_layout.background.fill
+    fill.solid()
+    fill.fore_color.rgb = RGBColor(0, 0, 0)
+
+    create_title_slide(ppt, blank_layout, title, authors)
     for lyric_block in lyric_blocks:
         if lyric_block == BLANK_SLIDE_NOTATION:
-            create_blank_slide(ppt)
+            create_blank_slide(ppt, blank_layout)
         else:
-            create_lyric_slide(ppt, lyric_block)
+            create_lyric_slide(ppt, blank_layout, lyric_block)
     return ppt
 
 
