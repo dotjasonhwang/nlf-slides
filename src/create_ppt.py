@@ -2,7 +2,7 @@ from pptx import Presentation
 from pathlib import Path
 from my_argparse import get_args
 from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.dml.color import RGBColor
 
 INPUT_FILENAME = "split_lyrics.txt"
@@ -63,6 +63,7 @@ def create_textbox(ppt, slide, contents):
     p = tf.paragraphs[0]
     p.text = contents
     p.alignment = PP_ALIGN.CENTER
+
     font = p.font
     font.name = FONT
     font.size = Pt(LYRICS_FONT_SIZE)
@@ -111,6 +112,7 @@ def main():
     lyric_blocks = get_lyric_blocks(blocks)
 
     ppt = create_ppt(title, authors, lyric_blocks)
+    print(f"Saving file {title}.pptx to {output_file_path()}")
     ppt.save(f"{output_file_path()}/{title}.pptx")
 
 if __name__ == "__main__":
