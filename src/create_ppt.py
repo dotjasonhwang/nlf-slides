@@ -4,10 +4,11 @@ from my_argparse import get_args
 from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.dml.color import RGBColor
+import os
 
-INPUT_FILENAME = "split_lyrics.txt"
 TEMPLATE_FILENAME = "Template.pptx"
-BLANK_SLIDE_NOTATION = "#"
+COMMENT_NOTATION = "#"
+BLANK_SLIDE_NOTATION = "!"
 FONT = "ARIAL"
 TITLE_FONT_SIZE = 40
 LYRICS_FONT_SIZE = 27
@@ -22,6 +23,10 @@ def data_folder_path():
     return Path(__file__).parent.parent.joinpath("data")
 
 
+def input_folder_path():
+    return f"{data_folder_path()}/input/"
+
+
 def input_file_path(input_filename):
     return f"{data_folder_path()}/input/{input_filename}"
 
@@ -30,13 +35,15 @@ def output_file_path():
     return f"{data_folder_path()}/output"
 
 
-def read_file_into_blocks(make_uppercase):
-    with open(input_file_path(INPUT_FILENAME), "r") as file:
-        text = file.read()
-        if make_uppercase:
-            text = text.upper()
-        return text.split("\n\n")
-    raise Exception
+def read_file_into_blocks(input_file, make_uppercase):
+    file_contents = ""
+    with open(input_file, "r") as file:
+        for line in file:
+            if not line.startswith(COMMENT_NOTATION):
+                file_contents += line
+    if make_uppercase:
+        file_contents = file_contents.upper()
+    return file_contents.split("\n\n")
 
 
 def create_title_slide(ppt, blank_layout, title, authors):
@@ -107,13 +114,16 @@ def get_lyric_blocks(blocks):
 def main():
     args = get_args()
     make_uppercase = args.uppercase
-    blocks = read_file_into_blocks(make_uppercase)
-    title, authors = get_title_and_authors(blocks)
-    lyric_blocks = get_lyric_blocks(blocks)
+    for file in os.listdir(input_folder_path()):
+        filename = input_folder_path() + os.fsdecode(file)
+        if filename.endswith("txt"):
+            blocks = read_file_into_blocks(filename, make_uppercase)
+            title, authors = get_title_and_authors(blocks)
+            lyric_blocks = get_lyric_blocks(blocks)
 
-    ppt = create_ppt(title, authors, lyric_blocks)
-    print(f"Saving file {title}.pptx to {output_file_path()}")
-    ppt.save(f"{output_file_path()}/{title}.pptx")
+            ppt = create_ppt(title, authors, lyric_blocks)
+            print(f"Saving file {title}.pptx to {output_file_path()}")
+            ppt.save(f"{output_file_path()}/{title}.pptx")
 
 if __name__ == "__main__":
     main()
