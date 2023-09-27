@@ -96,7 +96,7 @@ def create_ppt(title, authors, lyric_blocks):
 
     create_title_slide(ppt, blank_layout, title, authors)
     for lyric_block in lyric_blocks:
-        if lyric_block == BLANK_SLIDE_NOTATION:
+        if lyric_block.startswith(BLANK_SLIDE_NOTATION):
             create_blank_slide(ppt, blank_layout)
         else:
             create_lyric_slide(ppt, blank_layout, lyric_block)
@@ -111,19 +111,27 @@ def get_lyric_blocks(blocks):
     return blocks[2:]
 
 
+def process_lyrics_text_file(filename, make_uppercase):
+    print(f"Reading file {filename}...")
+    blocks = read_file_into_blocks(filename, make_uppercase)
+    title, authors = get_title_and_authors(blocks)
+    
+    print(f"Making slides for {title} by {authors}...")
+    lyric_blocks = get_lyric_blocks(blocks)
+    ppt = create_ppt(title, authors, lyric_blocks)
+    
+    print(f"Saving file {title}.pptx to {output_file_path()}...")
+    ppt.save(f"{output_file_path()}/{title}.pptx")
+
+
 def main():
     args = get_args()
     make_uppercase = args.uppercase
     for file in os.listdir(input_folder_path()):
         filename = input_folder_path() + os.fsdecode(file)
         if filename.endswith("txt"):
-            blocks = read_file_into_blocks(filename, make_uppercase)
-            title, authors = get_title_and_authors(blocks)
-            lyric_blocks = get_lyric_blocks(blocks)
+            process_lyrics_text_file(filename, make_uppercase)
 
-            ppt = create_ppt(title, authors, lyric_blocks)
-            print(f"Saving file {title}.pptx to {output_file_path()}")
-            ppt.save(f"{output_file_path()}/{title}.pptx")
 
 if __name__ == "__main__":
     main()
