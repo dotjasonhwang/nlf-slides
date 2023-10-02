@@ -1,8 +1,8 @@
 from pptx import Presentation
 from pathlib import Path
 from my_argparse import get_args
-from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
+from pptx.util import Pt
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.dml.color import RGBColor
 import os
 
@@ -12,6 +12,11 @@ BLANK_SLIDE_NOTATION = "!"
 FONT = "ARIAL"
 TITLE_FONT_SIZE = 40
 LYRICS_FONT_SIZE = 27
+ALIGNMENT_MAPPING = {
+        "top": MSO_ANCHOR.TOP,
+        "middle": MSO_ANCHOR.MIDDLE,
+        "bottom": MSO_ANCHOR.BOTTOM,
+    }
 
 def get_template_blank_layout():
     template_ppt = Presentation(input_file_path(TEMPLATE_FILENAME))
@@ -46,26 +51,26 @@ def read_file_into_blocks(input_file, make_uppercase):
     return file_contents.split("\n\n")
 
 
-def create_title_slide(ppt, blank_layout, title, authors):
+def create_title_slide(ppt, blank_layout, title, authors, config):
     title_slide = ppt.slides.add_slide(blank_layout)
-    create_textbox(ppt, title_slide, f"{title}\n{authors}")
+    create_textbox(ppt, title_slide, f"{title}\n{authors}", config)
 
 
 def create_blank_slide(ppt, blank_layout):
     ppt.slides.add_slide(blank_layout)
 
 
-def create_lyric_slide(ppt, blank_layout, lyric_block):
+def create_lyric_slide(ppt, blank_layout, lyric_block, config):
     lyric_slide = ppt.slides.add_slide(blank_layout)
-    create_textbox(ppt, lyric_slide, lyric_block)
+    create_textbox(ppt, lyric_slide, lyric_block, config)
 
 
-def create_textbox(ppt, slide, contents):
+def create_textbox(ppt, slide, contents, config):
     txBox = slide.shapes.add_textbox(
         0, 0, ppt.slide_width, ppt.slide_height)
     
     tf = txBox.text_frame
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    tf.vertical_anchor = ALIGNMENT_MAPPING[config.vertical_alignment] # TODO this is not yet tested
 
     p = tf.paragraphs[0]
     p.text = contents
@@ -85,7 +90,7 @@ def create_blank_layout(ppt):
     fill.fore_color.rgb = RGBColor(0, 0, 0)
 
 
-def create_ppt(title, authors, lyric_blocks):
+def create_ppt(title, authors, lyric_blocks, config):
     ppt = Presentation()
     blank_layout = create_blank_layout(ppt)
     
@@ -94,12 +99,12 @@ def create_ppt(title, authors, lyric_blocks):
     fill.solid()
     fill.fore_color.rgb = RGBColor(0, 0, 0)
 
-    create_title_slide(ppt, blank_layout, title, authors)
+    create_title_slide(ppt, blank_layout, title, authors, config)
     for lyric_block in lyric_blocks:
         if lyric_block.startswith(BLANK_SLIDE_NOTATION):
             create_blank_slide(ppt, blank_layout)
         else:
-            create_lyric_slide(ppt, blank_layout, lyric_block)
+            create_lyric_slide(ppt, blank_layout, lyric_block, config)
     return ppt
 
 
@@ -111,14 +116,15 @@ def get_lyric_blocks(blocks):
     return blocks[2:]
 
 
-def process_lyrics_text_file(filename, make_uppercase):
+def process_lyrics_text_file(filename, config):
+    # Calling args config,  no good reason why :)
     print(f"Reading file {filename}...")
-    blocks = read_file_into_blocks(filename, make_uppercase)
+    blocks = read_file_into_blocks(filename, config.uppercase)
     title, authors = get_title_and_authors(blocks)
     
     print(f"Making slides for {title} by {authors}...")
     lyric_blocks = get_lyric_blocks(blocks)
-    ppt = create_ppt(title, authors, lyric_blocks)
+    ppt = create_ppt(title, authors, lyric_blocks, config)
     
     print(f"Saving file {title}.pptx to {output_file_path()}...")
     ppt.save(f"{output_file_path()}/{title}.pptx")
@@ -126,11 +132,10 @@ def process_lyrics_text_file(filename, make_uppercase):
 
 def main():
     args = get_args()
-    make_uppercase = args.uppercase
     for file in os.listdir(input_folder_path()):
         filename = input_folder_path() + os.fsdecode(file)
         if filename.endswith("txt"):
-            process_lyrics_text_file(filename, make_uppercase)
+            process_lyrics_text_file(filename, args)
 
 
 if __name__ == "__main__":
