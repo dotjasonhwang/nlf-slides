@@ -118,6 +118,7 @@ def get_lyric_blocks(blocks):
 
 def process_lyrics_text_file(filename, config):
     # Calling args config,  no good reason why :)
+    print("-" * 10)
     print(f"Reading file {filename}...")
     blocks = read_file_into_blocks(filename, config.uppercase)
     title, authors = get_title_and_authors(blocks)
