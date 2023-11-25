@@ -1,6 +1,12 @@
+# Virtual env
 venv
 
-data/input
-data/output
+# Data files
+data/input/*
+!data/input/__init__.py
 
+data/output/*
+!data/output/__init__.py
+
+# Pycache
 src/__pycache__/

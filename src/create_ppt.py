@@ -6,12 +6,21 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.dml.color import RGBColor
 import os
 
-TEMPLATE_FILENAME = "Template.pptx"
+
+"""
+collections, collection.abc are imported to fix a known Python 3.10 bug.
+Identified by a friend.
+https://stackoverflow.com/questions/69468128/fail-attributeerror-module-collections-has-no-attribute-container
+"""
+import collections
+import collections.abc
+
+TEMPLATE_FILENAME = "Template.pptx" # Unused
 COMMENT_NOTATION = "#"
 BLANK_SLIDE_NOTATION = "!"
 FONT = "ARIAL"
-TITLE_FONT_SIZE = 40
-LYRICS_FONT_SIZE = 27
+TITLE_FONT_SIZE = 48
+LYRICS_FONT_SIZE = 36
 ALIGNMENT_MAPPING = {
         "top": MSO_ANCHOR.TOP,
         "middle": MSO_ANCHOR.MIDDLE,
