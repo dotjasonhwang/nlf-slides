@@ -126,18 +126,91 @@ def get_lyric_blocks(blocks):
 
 
 def process_lyrics_text_file(filename, config):
-    # Calling args config,  no good reason why :)
     print("-" * 10)
-    print(f"Reading file {filename}...")
+    print(f"Reading {filename}...")
     blocks = read_file_into_blocks(filename, config.uppercase)
     title, authors = get_title_and_authors(blocks)
     
-    print(f"Making slides for {title} by {authors}...")
+    print(f"Making slides for [{title}] by [{authors}]...")
     lyric_blocks = get_lyric_blocks(blocks)
     ppt = create_ppt(title, authors, lyric_blocks, config)
     
-    print(f"Saving file {title}.pptx to {output_file_path()}...")
+    print(f"Saving {title}.pptx to {output_file_path()}...")
     ppt.save(f"{output_file_path()}/{title}.pptx")
+
+#---------------------------
+SONG_MAP_KEY = '/'
+
+def parse_song_map(song_map_line):
+    return song_map_line.split(" ")
+
+
+def parse_sections(song_map, blocks):        
+    index = 0
+    current_section = None
+    lyric_blocks_by_section = {}
+    lyric_blocks_by_section["!"] = [""]
+
+    # TODO JH is this OK? Just handles the blank slide in this way. Can also handle it in the check at the end of htis function
+    while(index < len(blocks)):
+        block = blocks[index]
+        if block.startswith(SONG_MAP_KEY): # new starts
+            section = block[1:]
+            if section not in song_map:
+                raise Exception(f"{section} is not in the song map. The song map is: {song_map}")
+            elif section in lyric_blocks_by_section:
+                raise Exception(f"{section} is defined more than once. Please define each section only once")
+            else:
+                current_section = section
+                lyric_blocks_by_section[current_section] = []
+        else:
+            lyric_blocks_by_section[current_section].append(block)
+        index += 1
+
+    unique_sections = set(song_map)
+    sections_in_song_map_not_defined = unique_sections.difference(set(lyric_blocks_by_section))
+    if sections_in_song_map_not_defined:
+        raise Exception(f"{sections_in_song_map_not_defined}: were list in the song map but not defined")
+    return lyric_blocks_by_section
+
+def create_ppt_v2(title, authors, song_map, lyric_blocks_by_section, config):
+    # TODO unchanged begin
+    ppt = Presentation()
+    blank_layout = create_blank_layout(ppt)
+    
+    blank_layout = ppt.slide_layouts[6]
+    fill = blank_layout.background.fill
+    fill.solid()
+    fill.fore_color.rgb = RGBColor(0, 0, 0)
+
+    create_title_slide(ppt, blank_layout, title, authors, config)
+    # TODO unchanged end
+    for section in song_map:
+        for lyric_block in lyric_blocks_by_section[section]:
+            create_lyric_slide(ppt, blank_layout, lyric_block, config)
+            # TODO JH: Potentially no need for special blank slide handling here
+            # if lyric_block.startswith(BLANK_SLIDE_NOTATION):
+            #     create_blank_slide(ppt, blank_layout)
+    return ppt
+
+
+def process_lyrics_text_file_v2(filename, config):
+    print("-" * 10)
+    print(f"Reading {filename}...")
+    blocks = read_file_into_blocks(filename, config.uppercase)
+    # TODO should refactor so that file reading portion is per version, can share the other functions that make calls to other stuff
+    title, authors = get_title_and_authors(blocks)
+    song_map = parse_song_map(blocks[2])
+    lyric_blocks_by_section = parse_sections(song_map, blocks[3:])
+    print(f"Making slides for [{title}] by [{authors}]...")
+    
+    ppt = create_ppt_v2(title, authors, song_map, lyric_blocks_by_section, config)
+    
+    print(f"Saving {title}.pptx to {output_file_path()}...")
+    ppt.save(f"{output_file_path()}/{title}.pptx")
+
+#---------------------------
+
 
 
 def main():
@@ -145,7 +218,7 @@ def main():
     for file in os.listdir(input_folder_path()):
         filename = input_folder_path() + os.fsdecode(file)
         if filename.endswith("txt"):
-            process_lyrics_text_file(filename, args)
+            process_lyrics_text_file_v2(filename, args)
 
 
 if __name__ == "__main__":
