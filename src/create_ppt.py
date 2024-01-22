@@ -1,225 +1,24 @@
-from pptx import Presentation
-from pathlib import Path
-from my_argparse import get_args
-from pptx.util import Pt
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
-from pptx.dml.color import RGBColor
+from src.my_argparse import get_args
+from src.data.io_handler import IOHandler
+from src.processor.processor import V1Processor, V2Processor
+
 import os
 
-
-"""
-collections, collection.abc are imported to fix a known Python 3.10 bug.
-Identified by a friend.
-https://stackoverflow.com/questions/69468128/fail-attributeerror-module-collections-has-no-attribute-container
-"""
-import collections
-import collections.abc
-
-TEMPLATE_FILENAME = "Template.pptx" # Unused
-COMMENT_NOTATION = "#"
-BLANK_SLIDE_NOTATION = "!"
-FONT = "ARIAL"
-TITLE_FONT_SIZE = 48
-LYRICS_FONT_SIZE = 36
-ALIGNMENT_MAPPING = {
-        "top": MSO_ANCHOR.TOP,
-        "middle": MSO_ANCHOR.MIDDLE,
-        "bottom": MSO_ANCHOR.BOTTOM,
-    }
-
-def get_template_blank_layout():
-    template_ppt = Presentation(input_file_path(TEMPLATE_FILENAME))
-    blank_layout = template_ppt.slide_layouts[0]
-    return blank_layout
-
-
-def data_folder_path():
-    return Path(__file__).parent.parent.joinpath("data")
-
-
-def input_folder_path():
-    return f"{data_folder_path()}/input/"
-
-
-def input_file_path(input_filename):
-    return f"{data_folder_path()}/input/{input_filename}"
-
-
-def output_file_path():
-    return f"{data_folder_path()}/output"
-
-
-def read_file_into_blocks(input_file, make_uppercase):
-    file_contents = ""
-    with open(input_file, "r") as file:
-        for line in file:
-            if not line.startswith(COMMENT_NOTATION):
-                file_contents += line
-    if make_uppercase:
-        file_contents = file_contents.upper()
-    return file_contents.split("\n\n")
-
-
-def create_title_slide(ppt, blank_layout, title, authors, config):
-    title_slide = ppt.slides.add_slide(blank_layout)
-    create_textbox(ppt, title_slide, f"{title}\n{authors}", config)
-
-
-def create_blank_slide(ppt, blank_layout):
-    ppt.slides.add_slide(blank_layout)
-
-
-def create_lyric_slide(ppt, blank_layout, lyric_block, config):
-    lyric_slide = ppt.slides.add_slide(blank_layout)
-    create_textbox(ppt, lyric_slide, lyric_block, config)
-
-
-def create_textbox(ppt, slide, contents, config):
-    txBox = slide.shapes.add_textbox(
-        0, 0, ppt.slide_width, ppt.slide_height)
-    
-    tf = txBox.text_frame
-    tf.vertical_anchor = ALIGNMENT_MAPPING[config.vertical_alignment] # TODO this is not yet tested
-
-    p = tf.paragraphs[0]
-    p.text = contents
-    p.alignment = PP_ALIGN.CENTER
-
-    font = p.font
-    font.name = FONT
-    font.size = Pt(LYRICS_FONT_SIZE)
-    font.color.rgb = RGBColor(255, 255, 255)
-    font.bold = True
-
-
-def create_blank_layout(ppt):
-    blank_layout = ppt.slide_layouts[6]
-    fill = blank_layout.background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(0, 0, 0)
-
-
-def create_ppt(title, authors, lyric_blocks, config):
-    ppt = Presentation()
-    blank_layout = create_blank_layout(ppt)
-    
-    blank_layout = ppt.slide_layouts[6]
-    fill = blank_layout.background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(0, 0, 0)
-
-    create_title_slide(ppt, blank_layout, title, authors, config)
-    for lyric_block in lyric_blocks:
-        if lyric_block.startswith(BLANK_SLIDE_NOTATION):
-            create_blank_slide(ppt, blank_layout)
-        else:
-            create_lyric_slide(ppt, blank_layout, lyric_block, config)
-    return ppt
-
-
-def get_title_and_authors(blocks):
-    return blocks[0], blocks[1]
-
-
-def get_lyric_blocks(blocks):
-    return blocks[2:]
-
-
-def process_lyrics_text_file(filename, config):
-    print("-" * 10)
-    print(f"Reading {filename}...")
-    blocks = read_file_into_blocks(filename, config.uppercase)
-    title, authors = get_title_and_authors(blocks)
-    
-    print(f"Making slides for [{title}] by [{authors}]...")
-    lyric_blocks = get_lyric_blocks(blocks)
-    ppt = create_ppt(title, authors, lyric_blocks, config)
-    
-    print(f"Saving {title}.pptx to {output_file_path()}...")
-    ppt.save(f"{output_file_path()}/{title}.pptx")
-
-#---------------------------
-SONG_MAP_KEY = '/'
-
-def parse_song_map(song_map_line):
-    return song_map_line.split(" ")
-
-
-def parse_sections(song_map, blocks):        
-    index = 0
-    current_section = None
-    lyric_blocks_by_section = {}
-    lyric_blocks_by_section["!"] = [""]
-
-    # TODO JH is this OK? Just handles the blank slide in this way. Can also handle it in the check at the end of htis function
-    while(index < len(blocks)):
-        block = blocks[index]
-        if block.startswith(SONG_MAP_KEY): # new starts
-            section = block[1:]
-            if section not in song_map:
-                raise Exception(f"{section} is not in the song map. The song map is: {song_map}")
-            elif section in lyric_blocks_by_section:
-                raise Exception(f"{section} is defined more than once. Please define each section only once")
-            else:
-                current_section = section
-                lyric_blocks_by_section[current_section] = []
-        else:
-            lyric_blocks_by_section[current_section].append(block)
-        index += 1
-
-    unique_sections = set(song_map)
-    sections_in_song_map_not_defined = unique_sections.difference(set(lyric_blocks_by_section))
-    if sections_in_song_map_not_defined:
-        raise Exception(f"{sections_in_song_map_not_defined}: were list in the song map but not defined")
-    return lyric_blocks_by_section
-
-def create_ppt_v2(title, authors, song_map, lyric_blocks_by_section, config):
-    # TODO unchanged begin
-    ppt = Presentation()
-    blank_layout = create_blank_layout(ppt)
-    
-    blank_layout = ppt.slide_layouts[6]
-    fill = blank_layout.background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(0, 0, 0)
-
-    create_title_slide(ppt, blank_layout, title, authors, config)
-    # TODO unchanged end
-    for section in song_map:
-        for lyric_block in lyric_blocks_by_section[section]:
-            create_lyric_slide(ppt, blank_layout, lyric_block, config)
-            # TODO JH: Potentially no need for special blank slide handling here
-            # if lyric_block.startswith(BLANK_SLIDE_NOTATION):
-            #     create_blank_slide(ppt, blank_layout)
-    return ppt
-
-
-def process_lyrics_text_file_v2(filename, config):
-    print("-" * 10)
-    print(f"Reading {filename}...")
-    blocks = read_file_into_blocks(filename, config.uppercase)
-    # TODO should refactor so that file reading portion is per version, can share the other functions that make calls to other stuff
-    title, authors = get_title_and_authors(blocks)
-    song_map = parse_song_map(blocks[2])
-    lyric_blocks_by_section = parse_sections(song_map, blocks[3:])
-    print(f"Making slides for [{title}] by [{authors}]...")
-    
-    ppt = create_ppt_v2(title, authors, song_map, lyric_blocks_by_section, config)
-    
-    print(f"Saving {title}.pptx to {output_file_path()}...")
-    ppt.save(f"{output_file_path()}/{title}.pptx")
-
-#---------------------------
-
-
-
 def main():
-    args = get_args()
-    for file in os.listdir(input_folder_path()):
-        filename = input_folder_path() + os.fsdecode(file)
-        if filename.endswith("txt"):
-            process_lyrics_text_file_v2(filename, args)
+    versions = {1: V1Processor(), 2: V2Processor()}
+    args = get_args(list(versions.keys()))
+    processor = versions[args.version]
+    io_handler = IOHandler()
 
+    print(f"""Starting NLFSlides...\n
+    Using processor version: {args.version}
+    Reading txt files from: {io_handler.input_folder_path()}
+    Savings pptx files to: {io_handler.output_file_path()}\n""")
+
+    for filename in os.listdir(io_handler.input_folder_path()):
+        if filename.endswith("txt"):
+            full_file_path = io_handler.input_folder_path() + os.fsdecode(filename)
+            processor.process_lyrics_text_file(full_file_path, filename, args)
 
 if __name__ == "__main__":
     main()

@@ -9,4 +9,7 @@ data/output/*
 !data/output/__init__.py
 
 # Pycache
-src/__pycache__/
+**/__pycache__/
+
+# DS_Store
+*.DS_Store

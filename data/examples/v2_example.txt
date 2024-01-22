@@ -1,0 +1,51 @@
+# V2 Example file
+# Title
+Go tell it on a mountain
+
+# Author
+John Wesley Work Jr.
+
+# Song map
+C1 V1 C1 V2 C1 ! V3 C2 !
+
+/V1
+
+While shepherds kept their watching
+O'er silent flocks by night
+
+Behold throughout the heavens
+There shone a Holy light
+
+/V2
+
+The shepherds feared and trembled
+When, lo! Above the Earth
+
+Rang out the angel chorus
+That hailed our Savior's birth
+
+/V3
+
+Down in a lowly manger
+Our humble Christ was born
+
+And brought us all salvation
+That blessed Christmas morn
+
+/C1
+
+Go, tell it on the mountain
+Over the hills and everywhere
+
+Go, tell it on the mountain
+That Jesus Christ is born
+
+/C2
+
+Go, tell it on the mountain
+Over the hills and everywhere
+
+Go, tell it on the mountain
+That Jesus Christ is born
+
+That Jesus Christ is born
