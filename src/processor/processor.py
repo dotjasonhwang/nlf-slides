@@ -72,7 +72,7 @@ class V2Processor:
 
     def process_lyrics_text_file(self, full_file_path, filename, config):
         title, authors, song_map, section_and_lyric_blocks = self.parser.parse(full_file_path, filename)
-        lyric_blocks_by_section = self.process_sections(song_map, section_and_lyric_blocks, config)
+        lyric_blocks_by_section = self.process_sections(song_map, section_and_lyric_blocks)
         
         ppt = self.create_ppt(title, authors, song_map, lyric_blocks_by_section, config)
         

@@ -1,13 +1,14 @@
 class Parser:
     COMMENT_NOTATION = "#"
 
-    def _read_file_into_blocks(self, input_file):
+    def _read_file_into_blocks_and_strip_trailing_whitespace(self, input_file):
         file_contents = ""
         with open(input_file, "r") as file:
             for line in file:
                 if not line.startswith(Parser.COMMENT_NOTATION):
                     file_contents += line
-        return file_contents.split("\n\n")
+        # Split file_contents into blocks and strip trailing whitespace from each block
+        return [block.rstrip() for block in file_contents.split("\n\n")]
 
     def _get_title_and_authors(self, blocks):
         return blocks[0], blocks[1]
@@ -27,7 +28,7 @@ class V1Parser(Parser):
 
     def parse(self, full_file_path, filename):
         print(f"Reading {filename}...")
-        blocks = self._read_file_into_blocks(full_file_path)
+        blocks = self._read_file_into_blocks_and_strip_trailing_whitespace(full_file_path)
         title, authors = self._get_title_and_authors(blocks)
         lyric_blocks = self._get_lyric_blocks(blocks)
         return title, authors, lyric_blocks
@@ -41,7 +42,7 @@ class V2Parser(Parser):
 
     def parse(self, full_file_path, filename):
         print(f"Reading {filename}...")
-        blocks = self._read_file_into_blocks(full_file_path)
+        blocks = self._read_file_into_blocks_and_strip_trailing_whitespace(full_file_path)
         title, authors = self._get_title_and_authors(blocks)
         song_map = self._parse_song_map(blocks[2])
         section_and_lyric_blocks = blocks[3:]

@@ -46,8 +46,9 @@ The available processing versions are listed below:
 ### TODO
 - README templating
 - Generic templating (dotfiles, format hooks, typehinting)
-- tests :)
+- gpt tests :)
 	- 1 integration test should be that v1 and v2 example files should result in same ppt object
+- Pyinstaller/wheels/nest
 
 ### Misc Notes
 - Pyinstaller?
